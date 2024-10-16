@@ -1355,7 +1355,7 @@ def tv_alma(
     return Series(np.pad(alma, (length - 1, 0), mode="constant", constant_values=np.nan))
 
 
-def tv_trama(dataframe: DataFrame, length: int = 99, field="close") -> DataFrame:
+def tv_trama(dataframe: DataFrame, length: int = 99, field="close") -> Series:
     """
     Name : Tradingview "Trend Regularity Adaptive Moving Average"
     Pinescript Author : LuxAlgo
@@ -1383,8 +1383,34 @@ def tv_trama(dataframe: DataFrame, length: int = 99, field="close") -> DataFrame
     tc[:-1] = np.nan_to_num(ta.SMA(hh_or_ll.astype(float), length) ** 2)
 
     ama = np.zeros(df_len)
-    ama[0] = dataframe[field][0]
+    ama[0] = dataframe[field].iloc[0]
     for i in range(1, df_len):
-        ama[i] = ama[i - 1] + tc[i - 1] * (dataframe[field][i] - ama[i - 1])
+        ama[i] = ama[i - 1] + tc[i - 1] * (dataframe[field].iloc[i] - ama[i - 1])
 
     return Series(ama)
+
+def tv_rma(dataframe: DataFrame, timeperiod: int = 8, field="close") -> Series:
+    """
+    Source: Tradingview ""
+    Links:  
+    Pinescript Author: 
+    Description:    
+    Args :
+        dataframe : Pandas Dataframe
+        length  : ALMA windowframe
+        field   : Field to use for the calculation
+    Returns :
+        dataframe : Series of ALMA values
+    """
+
+    """ This is simple computation way, just for reference """
+    # src = dataframe[field]
+    # alpha = 1 / length
+    # sum = np.zeros_like(src)
+    # sum[0] = np.mean(src[:length])  # Initialize with the SMA of the first `length` elements
+    # for i in range(1, len(src)):
+    #     sum[i] = alpha * src[i] + (1 - alpha) * sum[i - 1]
+    # return sum
+
+    """ Vectorized method """
+    return dataframe[field].ewm(alpha=1/timeperiod, min_periods=timeperiod).mean()
