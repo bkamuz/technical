@@ -1305,7 +1305,7 @@ def tv_hma(dataframe: DataFrame, length: int = 9, field="close") -> Series:
 
 
 def tv_alma(
-    dataframe: DataFrame, length: int = 8, offset: int = 0, sigma: int = 0, field="close"
+    dataframe: DataFrame, timeperiod: int = 8, offset: int = 0, sigma: int = 0, field="close"
 ) -> Series:
     """
     Source: Tradingview "Arnaud Legoux Moving Average"
@@ -1344,18 +1344,18 @@ def tv_alma(
     """ Vectorized method """
     sigma = sigma or 1e-10
 
-    m = offset * (length - 1)
+    m = offset * (timeperiod - 1)
     s = length / sigma
 
-    indices = np.arange(length)
+    indices = np.arange(timeperiod)
     weights = np.exp(-np.power(indices - m, 2) / (2 * np.power(s, 2)))
     weights /= weights.sum()  # Normalize the weights
 
     alma = np.convolve(dataframe[field], weights[::-1], mode="valid")
-    return Series(np.pad(alma, (length - 1, 0), mode="constant", constant_values=np.nan))
+    return Series(np.pad(alma, (timeperiod - 1, 0), mode="constant", constant_values=np.nan))
 
 
-def tv_trama(dataframe: DataFrame, length: int = 99, field="close") -> Series:
+def tv_trama(dataframe: DataFrame, timeperiod: int = 99, field="close") -> Series:
     """
     Name : Tradingview "Trend Regularity Adaptive Moving Average"
     Pinescript Author : LuxAlgo
@@ -1375,12 +1375,12 @@ def tv_trama(dataframe: DataFrame, length: int = 99, field="close") -> Series:
 
     df_len = len(dataframe)
 
-    hh = ta.MAX(dataframe["high"], length)
-    ll = ta.MIN(dataframe["low"], length)
+    hh = ta.MAX(dataframe["high"], timeperiod)
+    ll = ta.MIN(dataframe["low"], timeperiod)
     hh_or_ll = np.where(np.diff(hh) > 0, 1, 0) + np.where(np.diff(ll) < 0, 1, 0)
 
     tc = np.zeros(df_len)
-    tc[:-1] = np.nan_to_num(ta.SMA(hh_or_ll.astype(float), length) ** 2)
+    tc[:-1] = np.nan_to_num(ta.SMA(hh_or_ll.astype(float), timeperiod) ** 2)
 
     ama = np.zeros(df_len)
     ama[0] = dataframe[field].iloc[0]
